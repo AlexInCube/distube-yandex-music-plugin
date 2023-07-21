@@ -81,6 +81,7 @@ export class YandexMusicPlugin extends CustomPlugin {
                 break
             }
             case "users": {
+                // @ts-ignore I need this, because getPlaylistById has a wrong type in userId
                 const playlistData: Playlist = await yandexClient.user.getPlaylistById(data.userId!, Number(data.albumId)).then(r => {
                     return r.result
                 })
