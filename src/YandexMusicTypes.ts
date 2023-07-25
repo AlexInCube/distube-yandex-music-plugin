@@ -1,8 +1,9 @@
 import {OtherSongInfo, PlaylistInfo, Song} from "distube";
 import {Album, Playlist, Track} from "yandex-music-client";
+import {yandexGenerateMusicTrackUrl} from "./YandexMusicAPI";
 
 export type LinkType = "track" | "album" | "users"
-export const PluginSource = "yandexmusic"
+const PluginSource = "yandexmusic"
 export class YandexMusicTrack implements OtherSongInfo {
     src = PluginSource;
     name: string;
@@ -25,13 +26,15 @@ export class YandexMusicAlbum implements PlaylistInfo {
     songs: Song[];
     name: string;
     url: string;
+    id: number;
     thumbnail?: string;
     constructor(info: Album, albumUrl: string) {
+        this.id = info.id;
         this.name = info.title;
         this.url = albumUrl;
         this.thumbnail = yandexGetCoverUri(info.coverUri, 100)
         if (!info.volumes?.length){ this.songs = []; return }
-        this.songs = info.volumes[0].map((track) => new Song(new YandexMusicTrack(track, albumUrl)));
+        this.songs = info.volumes[0].map((track) => new Song(new YandexMusicTrack(track, yandexGenerateMusicTrackUrl(track.id, this.id.toString()))));
     }
 }
 
@@ -52,7 +55,7 @@ export class YandexMusicPlaylist implements PlaylistInfo {
         if (!info.tracks.length) return
         info.tracks.forEach((track) => {
             if (track.track){
-                this.songs.push(new Song(new YandexMusicTrack(track.track, albumUrl)))
+                this.songs.push(new Song(new YandexMusicTrack(track.track, yandexGenerateMusicTrackUrl(track.id.toString(), track.track.albums[0].id.toString()))))
             }
         });
     }
