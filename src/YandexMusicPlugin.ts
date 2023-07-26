@@ -37,8 +37,6 @@ export class YandexMusicPlugin extends ExtractorPlugin {
     }
 
     async resolve(songLink: string, options: { member?: GuildMember; metadata?: any }){
-        console.log("Yandex Music Resolve")
-
         const data = parseYandexMusicURL(songLink)
         if (data === undefined) {
             throw new DisTubeError("YANDEXMUSIC_PLUGIN_RESOLVE_ERROR", "Error when parsing URL. Examples of good url: https://music.yandex.ru/album/5605637/track/42445828 or https://music.yandex.ru/album/5605637");
