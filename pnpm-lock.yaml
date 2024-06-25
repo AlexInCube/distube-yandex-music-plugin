@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      axios:
-        specifier: ^1.7.2
-        version: 1.7.2
       distube:
         specifier: ^5.0.0
         version: 5.0.2(@discordjs/voice@0.17.0)(discord.js@14.15.3)
