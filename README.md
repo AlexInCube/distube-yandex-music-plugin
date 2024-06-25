@@ -14,6 +14,11 @@
 A DisTube custom plugin for supporting Yandex Music URL.
 Created by [AlexInCube](https://vk.com/alexincube)
 
+## Warning
+
+If you want to use it with Distube v4, install v0.2.1 version of this plugin.
+Version 1.0.0 works only with Distube v5.
+
 ## Feature
 
 This plugin grabs the songs on Yandexmusic and plays with DisTube.
@@ -23,7 +28,8 @@ Examples of supported links:
 - Albums https://music.yandex.ru/album/5307396
 - Playlists https://music.yandex.ru/users/alexander.tsimbalistiy/playlists/1000
 
-If you have some troubles, please create an issue
+If you have some troubles, please create an issue.  
+You need the Premium Subscription in Yandex Music if you want to use this API outside Russia VDS
 
 ## Installation
 
@@ -33,14 +39,18 @@ npm install distube-yandex-music-plugin@latest
 
 ## Usage
 
-```js
+```ts
 const Discord = require("discord.js");
 const client = new Discord.Client();
 
 const { DisTube } = require("distube");
 const { YandexMusicPlugin } = require("distube-yandex-music-plugin");
+
 const distube = new DisTube(client, {
-  plugins: [new YandexMusicPlugin()],
+  plugins: [new YandexMusicPlugin({
+      oauthToken: "your_token",
+      uid: "your_uid"
+  })],
 });
 ```
 
@@ -49,10 +59,6 @@ const distube = new DisTube(client, {
 ### YandexMusicPlugin([YandexMusicPluginOptions])
 
 - `oauthToken:`: Required for using Yandex API. You can retrieve token by following this [guide](https://github.com/MarshalX/yandex-music-api/discussions/513)
-#### Example
+- `uid:`: Required for using Yandex API. You can retrieve uid by opening [Yandex Mail](https://mail.yandex.ru) and copy uid from url in address bar.
 
-```js
-new YandexMusicPlugin({
-  oauthToken: "YandexMusicToken"
-});
-```
+Token and UID must relate to one account

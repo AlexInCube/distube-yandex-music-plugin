@@ -1,63 +1,70 @@
-import {OtherSongInfo, PlaylistInfo, Song} from "distube";
-import {Album, Playlist, Track} from "yandex-music-client";
+import {ResolveOptions, Song as DistubeSong, Playlist as DistubePlaylist} from "distube";
 import {yandexGenerateMusicTrackUrl} from "./YandexMusicAPI";
+import {YandexMusicPlugin} from "./YandexMusicPlugin";
+import {Album, Track, Playlist} from "ym-api-meowed/dist/Types";
 
 export type LinkType = "track" | "album" | "users"
+
 const PluginSource = "yandexmusic"
-export class YandexMusicTrack implements OtherSongInfo {
-    src = PluginSource;
-    name: string;
-    url: string;
-    duration: number;
-    uploader: string;
-    thumbnail: string;
 
-    constructor(info: Track, trackUrl: string) {
-        this.name = info.title
-        this.duration = info.durationMs / 1000
-        this.uploader = info.artists[0].name
-        this.url = trackUrl
-        this.thumbnail = yandexGetCoverUri(info.coverUri, 100)
+export class YandexMusicSong<T> extends DistubeSong<T>{
+    constructor(plugin: YandexMusicPlugin, info: Track, albumId?: string, options: ResolveOptions<T> = {}) {
+        super({
+            plugin,
+            source: PluginSource,
+            playFromSource: true,
+            id: info.id.toString(),
+            url: yandexGenerateMusicTrackUrl(info.id.toString(), albumId),
+            name: info.title,
+            duration: info.durationMs / 1000,
+            isLive: false,
+            thumbnail: yandexGetCoverUri(info.coverUri, 100),
+            uploader: {
+                name: info.artists[0].name
+            },
+        }, options);
     }
 }
 
-export class YandexMusicAlbum implements PlaylistInfo {
-    source= PluginSource;
-    songs: Song[];
-    name: string;
-    url: string;
-    id: number;
-    thumbnail?: string;
-    constructor(info: Album, albumUrl: string) {
-        this.id = info.id;
-        this.name = info.title;
-        this.url = albumUrl;
-        this.thumbnail = yandexGetCoverUri(info.coverUri, 100)
-        if (!info.volumes?.length){ this.songs = []; return }
-        this.songs = info.volumes[0].map((track) => new Song(new YandexMusicTrack(track, yandexGenerateMusicTrackUrl(track.id, this.id.toString()))));
-    }
-}
+export class YandexMusicAlbum extends DistubePlaylist{
+    constructor(plugin: YandexMusicPlugin, info: Album, albumUrl: string, options: ResolveOptions = {}) {
+        let songs: Array<YandexMusicSong<any>> = []
 
-export class YandexMusicPlaylist implements PlaylistInfo {
-    source= PluginSource;
-    songs: Song[];
-    name: string;
-    url: string;
-    thumbnail?: string;
-    constructor(info: Playlist, albumUrl: string) {
-        this.name = info.title;
-        this.url = albumUrl;
-        this.songs = []
-        if (info.cover?.uri){
-            this.thumbnail = yandexGetCoverUri(info.cover?.uri, 100)
+        if (info?.volumes?.length){
+            songs = info.volumes[0].map((track) => new YandexMusicSong(plugin, track, info.id.toString()))
         }
 
-        if (!info.tracks.length) return
+        super({
+            songs,
+            source: PluginSource,
+            id: info.id.toString(),
+            name: info.title,
+            url: albumUrl,
+            thumbnail: yandexGetCoverUri(info.coverUri, 100),
+        }, options)
+    }
+}
+
+
+export class YandexMusicPlaylist extends DistubePlaylist {
+    constructor(plugin: YandexMusicPlugin, info: Playlist, albumUrl: string, options: ResolveOptions = {}) {
+        let songs: Array<YandexMusicSong<any>> = []
+
+        if (!info?.tracks?.length) return
         info.tracks.forEach((track) => {
             if (track.track){
-                this.songs.push(new Song(new YandexMusicTrack(track.track, yandexGenerateMusicTrackUrl(track.id.toString(), track.track.albums[0].id.toString()))))
+                songs.push(new YandexMusicSong(plugin, track.track, track.track.albums[0].id.toString(), options))
             }
         });
+
+        super({
+            songs,
+            source: PluginSource,
+            id: info.uid.toString(),
+            name: info.title,
+            url: albumUrl,
+            thumbnail: yandexGetCoverUri(info.tracks[0].track.coverUri, 100),
+        }, options)
     }
 }
 

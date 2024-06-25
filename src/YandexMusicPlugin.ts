@@ -1,16 +1,16 @@
-import {DisTubeError, ExtractorPlugin, Playlist, Song} from "distube";
-import {Album, Playlist as YandexFetchedPlaylist, YandexMusicClient} from "yandex-music-client";
-import {YandexMusicAlbum, YandexMusicPlaylist, YandexMusicTrack} from "./YandexMusicTypes.js";
-import {getTrackUrl} from "yandex-music-client/trackUrl.js";
-import {GuildMember} from "discord.js";
-import {parseYandexMusicURL, yandexGetTrackMetaData} from "./YandexMusicAPI.js";
+import {DisTubeError, PlayableExtractorPlugin, Playlist as DistubePlaylist, ResolveOptions, Song} from "distube";
+import {YandexMusicAlbum, YandexMusicPlaylist, YandexMusicSong} from "./YandexMusicTypes.js";
+import {parseYandexMusicURL} from "./YandexMusicAPI.js";
+import {YMApi} from "ym-api-meowed";
+import {Album, Playlist as YandexPlaylist} from "ym-api-meowed/dist/Types";
 
-let yandexClient: YandexMusicClient
+export const api: YMApi = new YMApi();
 
 export interface YandexMusicPluginOptions {
+    uid: number;
     oauthToken: string;
 }
-export class YandexMusicPlugin extends ExtractorPlugin {
+export class YandexMusicPlugin extends PlayableExtractorPlugin {
     constructor(options: YandexMusicPluginOptions) {
         super();
 
@@ -21,14 +21,7 @@ export class YandexMusicPlugin extends ExtractorPlugin {
             throw new DisTubeError("INVALID_TYPE", "string", options.oauthToken, "oauthToken");
         }
 
-        yandexClient = new YandexMusicClient({
-            BASE: "https://api.music.yandex.net:443",
-            HEADERS: {
-                'Authorization': `OAuth ${options.oauthToken}`,
-                'Accept-Language': 'ru'
-            },
-        });
-
+        api.init({access_token: options.oauthToken, uid: options.uid}).then(r => {});
     }
 
     override async validate(url: string): Promise<boolean> {
@@ -36,7 +29,7 @@ export class YandexMusicPlugin extends ExtractorPlugin {
         return /(.*)music\.yandex\.[a-z0-9]{0,10}\/(.*)$/.test(url)
     }
 
-    async resolve(songLink: string, options: { member?: GuildMember; metadata?: any }){
+    async resolve<T>(songLink: string, options: ResolveOptions<T>): Promise<Song<any> | DistubePlaylist<any>>{
         const data = parseYandexMusicURL(songLink)
         if (data === undefined) {
             throw new DisTubeError("YANDEXMUSIC_PLUGIN_RESOLVE_ERROR", "Error when parsing URL. Examples of good url: https://music.yandex.ru/album/5605637/track/42445828 or https://music.yandex.ru/album/5605637");
@@ -44,41 +37,47 @@ export class YandexMusicPlugin extends ExtractorPlugin {
 
         switch (data.linkType){
             case "track": {
-                const trackData = await yandexGetTrackMetaData(yandexClient, data.trackId!)
+                const trackData = await api.getTrack(Number(data.trackId))
                 if (!trackData) {
                     throw new DisTubeError("YANDEXMUSIC_PLUGIN_RESOLVE_ERROR", "Track data is not found");
                 }
 
-                return new Song(new YandexMusicTrack(trackData, songLink), options)
+                return new YandexMusicSong(this, trackData[0], songLink, options)
             }
             case "album": {
-                const album: Album = await yandexClient.albums.getAlbumsWithTracks(Number(data.albumId)).then(r => {
-                    return r.result
-                })
+                const album: Album = await api.getAlbumWithTracks(data.albumId!)
                 if (!album.volumes?.length) {
                     throw new DisTubeError("YANDEXMUSIC_PLUGIN_RESOLVE_ERROR", "Album is empty")
                 }
                 // Get streamURL for all tracks in playlist
-                return new Playlist(new YandexMusicAlbum(album, songLink), options)
+                return new YandexMusicAlbum(this, album, songLink, options)
             }
             case "users": {
-                // @ts-ignore I need this, because getPlaylistById has a wrong type in userId
-                const playlistData: YandexFetchedPlaylist = await yandexClient.user.getPlaylistById(data.userId!, Number(data.albumId)).then(r => {
-                    return r.result
-                })
+                const playlistData: YandexPlaylist = await api.getPlaylist(Number(data.albumId), data.userId)
 
-                if (!playlistData.tracks.length) {
+                if (!playlistData.tracks?.length) {
                     throw new DisTubeError("YANDEXMUSIC_PLUGIN_RESOLVE_ERROR", "Playlist is empty")
                 }
                 // Get streamURL for all tracks in playlist
-                return new Playlist(new YandexMusicPlaylist(playlistData, songLink), options)
+                return new YandexMusicPlaylist(this, playlistData, songLink, options)
             }
         }
     }
 
-    override async getStreamURL(songLink: string) {
-        const data = parseYandexMusicURL(songLink)!
-        return await getTrackUrl(yandexClient, data.trackId!)
+    override async getStreamURL(song: Song): Promise<string> {
+        if (!song.url) {
+            throw new DisTubeError("YANDEXMUSIC_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
+        }
+
+        const trackData = await api.getTrackDownloadInfo(Number(song.id))
+
+        const downloadUrl = await api.getTrackDirectLink(trackData[0].downloadInfoUrl)
+
+        return downloadUrl
+    }
+
+    getRelatedSongs() {
+        return [];
     }
 }
 
