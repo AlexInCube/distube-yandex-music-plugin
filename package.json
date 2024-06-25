@@ -1,6 +1,6 @@
 {
   "name": "distube-yandex-music-plugin",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A DisTube custom plugin for supporting Yandex Music.",
   "main": "./dist/YandexMusicPlugin.js",
   "types": "./dist/YandexMusicPlugin.d.ts",
@@ -40,6 +40,6 @@
     "ym-api-meowed": "^1.3.4"
   },
   "peerDependencies": {
-    "distube": "^5.0.0"
+    "distube": "5"
   }
 }

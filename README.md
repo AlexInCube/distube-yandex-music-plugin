@@ -17,7 +17,7 @@ Created by [AlexInCube](https://vk.com/alexincube)
 ## Warning
 
 If you want to use it with Distube v4, install v0.2.1 version of this plugin.
-Version 1.0.0 works only with Distube v5.
+Version ^1.0.3 works only with Distube v5.
 
 ## Feature
 
