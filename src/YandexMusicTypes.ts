@@ -8,13 +8,13 @@ export type LinkType = "track" | "album" | "users"
 const PluginSource = "yandexmusic"
 
 export class YandexMusicSong<T> extends DistubeSong<T>{
-    constructor(plugin: YandexMusicPlugin, info: Track, albumId?: string, options: ResolveOptions<T> = {}) {
+    constructor(plugin: YandexMusicPlugin, info: Track, albumId?: number | string, options: ResolveOptions<T> = {}) {
         super({
             plugin,
             source: PluginSource,
             playFromSource: true,
             id: info.id.toString(),
-            url: yandexGenerateMusicTrackUrl(info.id.toString(), albumId),
+            url: yandexGenerateMusicTrackUrl(info.id, albumId),
             name: info.title,
             duration: info.durationMs / 1000,
             isLive: false,
@@ -31,7 +31,7 @@ export class YandexMusicAlbum extends DistubePlaylist{
         let songs: Array<YandexMusicSong<any>> = []
 
         if (info?.volumes?.length){
-            songs = info.volumes[0].map((track) => new YandexMusicSong(plugin, track, info.id.toString()))
+            songs = info.volumes[0].map((track) => new YandexMusicSong(plugin, track, info.id))
         }
 
         super({
@@ -53,7 +53,7 @@ export class YandexMusicPlaylist extends DistubePlaylist {
         if (!info?.tracks?.length) return
         info.tracks.forEach((track) => {
             if (track.track){
-                songs.push(new YandexMusicSong(plugin, track.track, track.track.albums[0].id.toString(), options))
+                songs.push(new YandexMusicSong(plugin, track.track, track.track.albums[0].id, options))
             }
         });
 

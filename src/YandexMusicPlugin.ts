@@ -42,7 +42,7 @@ export class YandexMusicPlugin extends PlayableExtractorPlugin {
                     throw new DisTubeError("YANDEXMUSIC_PLUGIN_RESOLVE_ERROR", "Track data is not found");
                 }
 
-                return new YandexMusicSong(this, trackData[0], songLink, options)
+                return new YandexMusicSong(this, trackData[0], data.albumId, options)
             }
             case "album": {
                 const album: Album = await api.getAlbumWithTracks(data.albumId!)

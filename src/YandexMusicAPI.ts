@@ -76,7 +76,10 @@ export function yandexMusicParserPartPlaylist(url: string, parsedData: string[])
     return {linkType: "users", userId, albumId, url}
 }
 
-export function yandexGenerateMusicTrackUrl(trackId: string, albumId?: string){
+export function yandexGenerateMusicTrackUrl(trackId: string | number, albumId?: string | number){
+    trackId = trackId.toString()
+    albumId = albumId?.toString()
+
     if (albumId){
         return `https://music.yandex.ru/album/${albumId}/track/${trackId}`
     }
